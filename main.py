@@ -3,8 +3,11 @@ from datetime import datetime
 import shutil
 import subprocess
 import re
+import time
+import csv
 
 # Colors
+light_green = "\033[38;5;120m"
 cyan = "\033[1;36m"
 red = "\033[1;31m"
 green = "\033[38;5;82m"
@@ -55,7 +58,7 @@ def get_wifi_int():
         print(f"{red}[!] No WiFi interfaces found.{reset} ")
         exit()
     else:
-        print(f"{green}[+]{reset} The following WiFi interfaces are available:")
+        print(f"\n{green}[+]{reset} The following WiFi interfaces are available:")
         for index, item in enumerate(net_int):
             print(f"{purple}[{index}]{reset} {cyan}{item}{reset}")
         while True:
@@ -86,17 +89,18 @@ def set_monitor_mode(inf):
     except Exception as e:
         print(f"{red}[!] Error switching to 'monitor' mode: {e}{reset}")
 
-def set_band_to_monitor(band, inf):
-    """Select 2.4GHz, 5GHz, or both) for monitoring."""
-    try:
-        if band and inf:
-            subprocess.Popen(["airodump-ng", "--band", band, "-w", "file", "--write-interval", "1", "--output-format", "csv", inf], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    except Exception as e:
-        print(f"{red}[!] Scan failed: {e}{reset}")
+def check_for_essid(bssid, lst):
+    """Check if an BSSID is already in the list of networks."""
+    check_status = True
+    if len(lst) == 0:
+        return check_status
+    for item in lst:
+        if bssid in item["BSSID"]:
+            check_status = False
+    return check_status
 
-#### not finished yet
 def scan_networks(inf):
-    """Run airodump-ng to discover networks."""
+    """Select band and run airodump-ng to discover networks."""
     try:
         wifi_bands = ["bg (2.4Ghz)", "a (5Ghz)", "abg (all bands, will be slower)"]
         print(f"\n{yellow}[?]{reset} Please select the frequency you want to scan {cyan}(verify that your adapter supports 5GHz if chosen){reset}:")
@@ -112,18 +116,60 @@ def scan_networks(inf):
                     raise ValueError("Please make a valid selection.")
             except ValueError as e:
                 print(f"{red}[!] {e}{reset}")
-        print(freq)
         print(f"{green}[+] Scanning {wifi_bands[choice]}....{reset}\n")
+        if inf and freq:
+            subprocess.Popen(["airodump-ng", "--band", freq, "-w", "scan", "--write-interval", "1", "--output-format", "csv", inf], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except (Exception) as e:
         print(f"{red}[!] Scan networks failed: {e}{reset}")
+
+def parse_wifi_networks():
+    """Display a menu of available Wi-Fi networks."""
+    active_wireless_networks = list()
+    try:
+        while True:
+            os.system("clear")
+            for file_name in os.listdir():
+                fieldnames = ['BSSID', 'First_time_seen', 'Last_time_seen', 'channel', 'Speed', 'Privacy', 'Cipher', 'Authentication', 'Power', 'beacons', 'IV', 'LAN_IP', 'ID_length', 'ESSID', 'Key']
+                if ".csv" in file_name:
+                    with open(file_name) as csv_h:
+                        csv_h.seek(0)
+                        csv_reader = csv.DictReader(csv_h, fieldnames=fieldnames)
+                        for row in csv_reader:
+                            if row["BSSID"] == "BSSID":
+                                pass
+                            elif row["BSSID"] == "Station MAC":
+                                break
+                            elif check_for_essid(row["BSSID"], active_wireless_networks):
+                                active_wireless_networks.append(row)
+ 
+            print(f"{yellow}[*]{reset} Scanning. Press Ctrl+C when you want to select which wireless network you want to attack.\n")
+            print(f"{light_green}No |\tBSSID              |\tChannel|\tPower |\t\tESSID                         |{reset}")
+            print(f"{light_green}___|\t___________________|\t_______|\t______|\t\t______________________________|{reset}")
+            for index, item in enumerate(active_wireless_networks):
+                print(f"{index}\t{item['BSSID']}\t{item['channel'].strip()}\t\t{item['Power'].strip()}\t\t{item['ESSID']}")
+            time.sleep(1)
+
+    except KeyboardInterrupt:
+        print(f"\n{yellow}[+]{reset} Ready to make choice.")
+
+    while True:
+        try:
+            net_choice = input(f"\n{yellow}[>]{reset} Please select a network from above: ")
+            if active_wireless_networks[int(net_choice)]:
+                return active_wireless_networks[int(net_choice)]
+            else:
+                raise ValueError("Invalid choice.")
+        except ValueError as e:
+            print(f"{red}[!] Error network choice: {e}{reset}")
+
 
 def select_target(networks):
     """Display network menu and return user's choice."""
     pass
 
-def get_clients(wifi_ssid, wifi_channel, wifi_name):
+def get_clients(wifi_ssid, wifi_channel, inter):
     """Capture clients on target network."""
-    subprocess.Popen(["airodump-ng", "--bssid", wifi_ssid, "--channel", wifi_channel, "-w", "clients", "--write-interval", "1", "--output-format", "csv", wifi_name],  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.Popen(["airodump-ng", "--bssid", wifi_ssid, "--channel", wifi_channel, "-w", "clients", "--write-interval", "1", "--output-format", "csv", inter],  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 def filter_clients():
     """Exclude whitelisted MACs from attack."""
@@ -132,7 +178,7 @@ def filter_clients():
     while True:
         try:
             print(f"\n{yellow}[-]{reset} Enter MACs to exclude (comma-separated) or leave empty to attack all.")
-            macs = input(f"{yellow}[>]{reset} Your choices {cyan}ie 00:11:22:33:44:55,11:22:33:44:55:66{reset} :\n")
+            macs = input(f"{yellow}[>]{reset} Your choices {cyan}ie 00:11:22:33:44:55,11:22:33:44:55:66{reset} :\n").strip()
             if not macs:
                 print(f"{green}[!]{reset} You will attack all the clients.")
                 return []
@@ -158,10 +204,10 @@ def restore_managed_mode(inf):
     """Revert interface to default managed mode."""
     try:
         print(f"{yellow}[*]{reset} Switching to default 'managed' mode...")
-        subprocess.run(["ip", "link", "set", inf, "down"],stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
-        subprocess.run(["iwconfig", inf, "mode", "managed"],stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
-        subprocess.run(["ip", "link", "set", inf, "up"],stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
-        subprocess.run(["service", "NetworkManager", "start"], check=True)
+        subprocess.run(["sudo", "ip", "link", "set", inf, "down"], check=True)
+        subprocess.run(["sudo", "iwconfig", inf, "mode", "managed"], check=True)
+        subprocess.run(["sudo", "ip", "link", "set", inf, "up"], check=True)
+        subprocess.run(["sudo", "service", "NetworkManager", "start"], check=True)
         mode = subprocess.run(["iw", "dev", inf, "info"], capture_output=True).stdout.decode()
         if "managed" not in mode.lower():
             raise Exception(f"Failed to switch to 'managed' mode")
@@ -174,9 +220,19 @@ def main():
     os.system("clear")
     print(logo)
     check_sudo()
+    backup_csv()
     inter = get_wifi_int()
-    filter_clients()
+    set_monitor_mode(inter)
     scan_networks(inter)
+    wifi_network_choice = parse_wifi_networks()
+    hackbssid = wifi_network_choice["BSSID"]
+    hackchannel = wifi_network_choice["channel"].strip()
+    get_clients(hackbssid, hackchannel, inter)
+    active_clients = set()
+    
+    #subprocess.run(["airmon-ng", "start", inter, hackchannel])
+    #filter_clients()
+    restore_managed_mode(inter)
 
 if __name__ == "__main__":
     main()
