@@ -102,7 +102,7 @@ def set_band_to_monitor(choice, intf):
             print(f"{red}[!] Error frequency selection: {reset}")
 
 def scan_networks(inf):
-    """Run airodump-ng to discover networks, return list."""
+    """Run airodump-ng to discover networks."""
     pass
 
 def select_target(networks):
@@ -118,7 +118,7 @@ def filter_clients(clients, whitelist):
     pass
 
 def deauth_attack(target_bssid, clients, interface):
-    """Threaded deauth attack on selected clients."""
+    """Run deauth attack on selected clients."""
     pass
 
 def restore_managed_mode(inf):
