@@ -204,10 +204,10 @@ def restore_managed_mode(inf):
     """Revert interface to default managed mode."""
     try:
         print(f"{yellow}[*]{reset} Switching to default 'managed' mode...")
-        subprocess.run(["sudo", "ip", "link", "set", inf, "down"], check=True)
-        subprocess.run(["sudo", "iwconfig", inf, "mode", "managed"], check=True)
-        subprocess.run(["sudo", "ip", "link", "set", inf, "up"], check=True)
-        subprocess.run(["sudo", "service", "NetworkManager", "start"], check=True)
+        subprocess.run(["ip", "link", "set", inf, "down"], check=True)
+        subprocess.run(["iw", inf, "set", "type", "managed"], check=True)
+        subprocess.run(["ip", "link", "set", inf, "up"], check=True)
+        subprocess.run(["service", "NetworkManager", "start"], check=True)
         mode = subprocess.run(["iw", "dev", inf, "info"], capture_output=True).stdout.decode()
         if "managed" not in mode.lower():
             raise Exception(f"Failed to switch to 'managed' mode")
