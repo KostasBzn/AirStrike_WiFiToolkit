@@ -83,27 +83,34 @@ def set_monitor_mode(inf):
     except Exception as e:
         print(f"{red}[!] Error switching to 'monitor' mode: {e}{reset}")
 
-#### Continue from here
-def set_band_to_monitor(choice, intf):
+def set_band_to_monitor(band, inf):
     """Select 2.4GHz, 5GHz, or both) for monitoring."""
-    while True:
-        wifi__bands = ["bg (2.4Ghz)", "a (5Ghz)", "abg (Will be slower)"]
-        try:
-            choice = input(f"{yellow}[>]{reset} Please select the bands you want to scan from the list above: ")
-            if choice == "0":
-                subprocess.Popen(["airodump-ng", "--band", "bg", "-w", "file", "--write-interval", "1", "--output-format", "csv", intf], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            elif choice == "1":
-                subprocess.Popen(["airodump-ng", "--band", "a", "-w", "file", "--write-interval", "1", "--output-format", "csv", intf], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)        
-            elif choice == "2":
-                subprocess.Popen(["airodump-ng", "--band", "abg", "-w", "file", "--write-interval", "1", "--output-format", "csv", intf], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            else:
-                raise ValueError("Invalid input.")
-        except (ValueError, Exception) as e:
-            print(f"{red}[!] Error frequency selection: {reset}")
+    try:
+        if band and inf:
+            subprocess.Popen(["airodump-ng", "--band", band, "-w", "file", "--write-interval", "1", "--output-format", "csv", inf], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception as e:
+        print(f"{red}[!] Scan failed: {e}{reset}")
 
 def scan_networks(inf):
     """Run airodump-ng to discover networks."""
-    pass
+    try:
+        wifi_bands = ["bg (2.4Ghz)", "a (5Ghz)", "abg (all bands, will be slower)"]
+        print(f"{yellow}[?]{reset} Please select the frequency you want to scan:")
+        for idx, band in enumerate(wifi_bands):
+            print(f"{purple}[{idx}]{reset} {cyan}{band}{reset}")
+        while True:
+            try:
+                choice = int(input(f"\n{yellow}[>]{reset} Your choice (0-2): ").strip())
+                if 0 <= choice <= len(wifi_bands) - 1:
+                    freq = wifi_bands[choice].split(" ")[0].strip()
+                    break
+                else:
+                    raise ValueError("Please make a valid selection.")
+            except ValueError as e:
+                print(f"{red}[!] {e}{reset}")
+        print(f"{green}[+] Scanning {wifi_bands[choice]}....{reset}\n")
+    except (Exception) as e:
+        print(f"{red}[!] Scan networks failed: {e}{reset}")
 
 def select_target(networks):
     """Display network menu and return user's choice."""
@@ -141,6 +148,7 @@ def main():
     print(logo)
     #check_sudo()
     inter = get_wifi_int()
+    scan_networks(inter)
 
 if __name__ == "__main__":
     main()
