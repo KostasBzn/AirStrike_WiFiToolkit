@@ -24,6 +24,7 @@ This is a simple Wi-Fi deauthentication tool, written in Python, designed for ed
 - Python 3.8+
 - Linux only (tested on Kali)
 - Tools: `aircrack-ng`, `iw`, `ip`, `shutil`, etc. (preinstalled on Kali Linux)
+- Requires WiFi adaptor that supports `monitor` mode.
 
 ### 🚀 How to Use
 
