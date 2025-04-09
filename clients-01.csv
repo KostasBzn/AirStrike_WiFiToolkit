@@ -1,8 +1,0 @@
-
-BSSID, First time seen, Last time seen, channel, Speed, Privacy, Cipher, Authentication, Power, # beacons, # IV, LAN IP, ID-length, ESSID, Key
-58:96:30:FB:CF:90, 2025-04-09 17:36:11, 2025-04-09 17:36:21,  1, 195, WPA2, CCMP, PSK, -44,      100,        6,   0.  0.  0.  0,  13, Vodafone-CF8C, 
-
-Station MAC, First time seen, Last time seen, Power, # packets, BSSID, Probed ESSIDs
-F4:CF:A2:11:D9:A5, 2025-04-09 17:36:12, 2025-04-09 17:36:21, -51,       10, 58:96:30:FB:CF:90,
-F4:CF:A2:0F:83:41, 2025-04-09 17:36:12, 2025-04-09 17:36:21, -57,       14, 58:96:30:FB:CF:90,
-
