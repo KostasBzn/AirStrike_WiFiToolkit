@@ -32,10 +32,14 @@ This is a simple dual-purpose tool written in Python, for WiFi penetration testi
 - Tools: `aircrack-ng`, `tshark`, `iw`, `ip`, `shutil`, etc. (all preinstalled on Kali Linux)
 - Requires WiFi adaptor that supports `monitor` mode.
 
+---
+
 ### Quick Start
 
 1. sudo python3 dos_wifi.py (to lainch deauthentication)
 2. sudo python3 dos_def.py (to capture and defend deauthentication)
+
+---
 
 ### ⚠️ Ethical Disclaimer
 
