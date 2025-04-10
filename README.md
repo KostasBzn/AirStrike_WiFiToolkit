@@ -1,6 +1,6 @@
-## WiFi Deauth Tool (Python)
+## WiFi Security Tool (Python)
 
-This is a simple Wi-Fi deauthentication tool, written in Python, designed for education and practice in pentesting.
+This is a simple dual-purpose tool written in Python, for WiFi penetration testing penetration testing and deauthentication attack detection.
 
 ---
 
@@ -8,7 +8,7 @@ This is a simple Wi-Fi deauthentication tool, written in Python, designed for ed
 
 ---
 
-### Features
+### 1. Attacker Module (`dos_wifi.py`)
 
 - Colored CLI interface
 - Automatic CSV `backup` from previous runs
@@ -17,26 +17,27 @@ This is a simple Wi-Fi deauthentication tool, written in Python, designed for ed
 - Whitelist filtering MAC addresses you don't want to deauth
 - Clean exit and monitor mode restore
 
+### 2. Defender Module (`dos_def.py`)
+- Detects deauthentication attacks in real-time
+- Identifies attacking devices
+- Provides attack statistics
+- Threat alerts.
+
 ---
 
 ### Requirements
 
 - Python 3.8+
 - Linux only (tested on Kali)
-- Tools: `aircrack-ng`, `iw`, `ip`, `shutil`, etc. (preinstalled on Kali Linux)
+- Tools: `aircrack-ng`, `tshark`, `iw`, `ip`, `shutil`, etc. (all preinstalled on Kali Linux)
 - Requires WiFi adaptor that supports `monitor` mode.
 
-### How to Use
+### Quick Start
 
-1. sudo python3 main.py
-2. Select your wireless interface.
-3. Switch to monitor mode.
-4. Scan and select a network.
-5. View connected clients.
-6. Exclude MACs you don't want to target (optional).
-7. Launch the deauthentication.
+1. sudo python3 dos_wifi.py (to lainch deauthentication)
+2. sudo python3 dos_def.py (to capture and defend deauthentication)
 
 ### ⚠️ Ethical Disclaimer
 
-- This script is strictly for educational and authorized penetration testing use only. Do not use this tool on networks you don’t own or have permission to test. Misuse is prohibited and may violate laws.
+- This script is strictly for educational and authorized penetration testing use only. Unauthorized use against networks you don't own is illegal.
 
