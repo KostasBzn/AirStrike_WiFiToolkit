@@ -265,7 +265,6 @@ def main():
     subprocess.run(["airmon-ng", "start", inter, hackchannel])
     
     threads = []
-    
     time.sleep(2)
     for client in clients_to_deauth:
         time.sleep(2)
