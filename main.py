@@ -79,9 +79,13 @@ def set_monitor_mode(inf):
     try:
         print(f"{yellow}[*]{reset} Switching to 'monitor' mode...")
         subprocess.run(["airmon-ng", "check", "kill"], check=True)
+        time.sleep(1)
         subprocess.run(["ip", "link", "set", inf, "down"],stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+        time.sleep(2)
         subprocess.run(["iwconfig", inf, "mode", "monitor"],stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+        time.sleep(2)
         subprocess.run(["ip", "link", "set", inf, "up"],stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+        time.sleep(1)
         mode = subprocess.run(["iw", "dev", inf, "info"], capture_output=True).stdout.decode()
         if "monitor" not in mode.lower():
             raise Exception(f"Failed to switch. Make sure your adaptor supports 'monitor' mode")
@@ -233,7 +237,7 @@ def restore_managed_mode(inf):
         subprocess.run(["ip", "link", "set", inf, "down"], check=True)
         time.sleep(2)
         subprocess.run(["iw", inf, "set", "type", "managed"], check=True)
-        time.sleep(1)
+        time.sleep(2)
         subprocess.run(["ip", "link", "set", inf, "up"], check=True)
         time.sleep(1)
         subprocess.run(["service", "NetworkManager", "start"], check=True)
@@ -264,11 +268,11 @@ def main():
     
     time.sleep(2)
     for client in clients_to_deauth:
+        time.sleep(2)
         t = threading.Thread(target=deauth_attack, args=[hackbssid, client, inter], daemon=True)
-        time.sleep(1)
         t.start()
         threads.append(t)
-
+        
     try:
         while True:
             time.sleep(0.1)
