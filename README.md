@@ -33,7 +33,7 @@ This is a simple Wi-Fi deauthentication tool, written in Python, designed for ed
 3. Switch to monitor mode.
 4. Scan and select a network.
 5. View connected clients.
-6. Exclude MACs you don't want to target.
+6. Exclude MACs you don't want to target (optional).
 7. Launch the deauthentication.
 
 ### ⚠️ Ethical Disclaimer
