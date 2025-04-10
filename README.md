@@ -1,6 +1,6 @@
 ## WiFi Security Tool (Python)
 
-This is a simple dual-purpose tool written in Python, for WiFi penetration testing penetration testing and deauthentication attack detection.
+This is a simple dual-purpose tool written in Python, for WiFi penetration testing and deauthentication attack detection.
 
 ---
 
